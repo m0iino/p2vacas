@@ -1,0 +1,5 @@
+digraph G {
+	tab2 [label=<<TABLE>
+    <TR><TD> inicio.val : instrucciones.val</TD></TR><TR><TD> instrucciones.val : instrucciones1.append(instruccion.val)</TD></TR><TR><TD> instruccion.val: expresiones.val</TD></TR><TR><TD> imprimir.val : expresion.val</TD></TR><TR><TD> expresion.val : temp.val</TD></TR><TR><TD> instrucciones.val : instrucciones1.append(instruccion.val)</TD></TR><TR><TD> instruccion.val: expresiones.val</TD></TR><TR><TD> asignartemp.val : expresion.val</TD></TR><TR><TD> expresion.val : entero.val</TD></TR><TR><TD> instrucciones.val : instrucciones1.append(instruccion.val)</TD></TR><TR><TD> instruccion.val: expresiones.val</TD></TR><TR><TD> asignartemp.val : expresion.val</TD></TR><TR><TD> expresion.val : cadena.val</TD></TR><TR><TD> instrucciones.val: instruccion.val</TD></TR><TR><TD> instruccion.val: expresiones.val</TD></TR><TR><TD> metodo.val : id.val</TD></TR>
+    </TABLE>>]
+}

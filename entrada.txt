@@ -1,0 +1,4 @@
+main:
+$t0 = "holasdfa";
+$t1 = 1;
+print($t0);

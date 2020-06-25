@@ -1,0 +1,5 @@
+digraph G {
+	tab3 [label=<<TABLE>
+    <TR><TD>$t0</TD><TD>TIPO_DATO.CADENA</TD><TD>holasdfa</TD></TR><TR><TD>$t1</TD><TD>TIPO_DATO.NUMERO</TD><TD>1</TD></TR>
+    </TABLE>>]
+}

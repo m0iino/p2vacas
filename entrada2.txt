@@ -1,0 +1,9 @@
+int a,b,c=1;
+float d,e =2.2;
+double f;
+char g,H = 'h';
+char i[] = "hola";
+g = 6;
+g = 'e';
+i="cristian";
+printf(1+1+5+4);
