@@ -979,19 +979,27 @@ def reporte_gramatica(gramatica):
     d.view()
 
 def reporte_tabla_simbolos(simbolos):
-    print("reporte ts22")
-    d = Digraph('G', filename='simbolos2')
-    cont=0
-    nodo = ""
-    for simbolo in simbolos:
-        #print("esto trae:",simbolos[simbolo].id,"tipo: ",simbolos[simbolo].id,"valor ",simbolos[simbolo].valor)
-        nodo += '<TR><TD>'+simbolos[simbolo].id+'</TD><TD>'+str(simbolos[simbolo].tipo)+'</TD><TD>'+str(simbolos[simbolo].valor)+'</TD></TR>'
-        
-    #print("nodo",nodo)    
-    d.node('tab3',label='''<<TABLE>
-    '''+nodo+'''
-    </TABLE>>''')
-    d.view()
+    open('simbolos2','w').close()
+    if errores == None:
+        print("no hay errores")
+        return
+    else:
+        print("reporte ts22",simbolos)
+        d = Digraph('G', filename='simbolos2')
+        cont=0
+        nodo = ""
+        if not simbolos:
+                nodo += '<TR><TD>'+"vacio"+'</TD></TR>'
+        else:
+            for simbolo in simbolos:
+                print("esto trae:",simbolos[simbolo].id,"tipo: ",simbolos[simbolo].id,"valor ",simbolos[simbolo].valor)
+                nodo += '<TR><TD>'+simbolos[simbolo].id+'</TD><TD>'+str(simbolos[simbolo].tipo)+'</TD><TD>'+str(simbolos[simbolo].valor)+'</TD></TR>'
+            
+        #print("nodo",nodo)    
+        d.node('tab3',label='''<<TABLE>
+        '''+nodo+'''
+        </TABLE>>''')
+        d.view()
 
     
 #reporte_errores()   

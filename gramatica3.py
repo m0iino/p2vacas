@@ -277,9 +277,7 @@ def p_instruccion(t) :
 def p_etiqueta(t):
     'etiqueta : ID DOSPUNTOS'
     t[0] = Etiqueta(t[1])
-def p_goto(t):
-    'goto : GOTO ID PTCOMA'
-    t[0] = Goto(t[2])
+
 def p_return(t):
     'return : RETURN expresion_numerica'
     t[0] = Return(t[2])
@@ -320,8 +318,13 @@ def p_parametro(t):
     t[0] = Parametro(t[1],t[2])
     global gramatical 
     gramatical.append( " parametro.val : new parametro(tipo.val,id.val);")
-
 def p_llamada_funcion(t):
+    'llamada_funcion : ID PARIZQ PARDER PTCOMA'
+    t[0] = Llamada_Funcion(t[1],[])
+    global gramatical 
+    gramatical.append( " llamada.val : new Llamada(id.val,lista_ids.val);")
+
+def p_llamada_funcion_parametros(t):
     'llamada_funcion : ID PARIZQ lista_ids PARDER PTCOMA'
     t[0] = Llamada_Funcion(t[1],t[3])
     global gramatical 
@@ -395,7 +398,9 @@ def p_if_else_if(t) :
     t[0] = IfElseIf(t[3],t[6],t[9])
     global gramatical 
     gramatical.append( " ifelse.val : expresion.val")
-
+def p_goto(t):
+    'goto : GOTO ID PTCOMA'
+    t[0] = Goto(t[2])
 def p_switch(t):
     'switch : SWITCH PARIZQ expresion_numerica PARDER LLAVIZQ casos LLAVDER'
     t[0] = Switch(t[3], t[6])

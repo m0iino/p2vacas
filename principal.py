@@ -21,6 +21,8 @@ cont_p=0
 cont_re=0
 cont_pila=0
 codigo3d = ""
+codigoglobal = ""
+codigosalida = ""
 codigog = ""
 etiquetas = ""
 cont_v=0
@@ -125,14 +127,42 @@ def procesar_imprimir_compuesto(instr, ts) :
     #cadena = cadena+'> ' + str(val) +'\n'
     #print(cadena)
 def getCadena():
-    global codigo3d
+    global codigosalida
     #print("get cadena:",cadena)
-    return codigo3d
+    return codigosalida
     
 def procesar_borrar(instr,ts):
     #print("procesar borrar: ")
     ts.borrar(instr.cad.id)
     
+def procesar_definicion_global(instr,ambito,ts):
+    print("procesar def global")
+    global cont_v
+    global codigoglobal
+    if isinstance(instr, Definicion_Asignacion_Arreglo_Multiple):
+        print("definicion arreglo")
+        tmp = getTemp()
+        simbolo = TS.Simbolo(instr.id, instr.tipo, [],cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+        cont_v += 1
+        ts.agregar(simbolo)
+        codigoglobal += str(tmp)+"= array();\n"
+    else:
+
+        print("tamaño:",len(instr.id))
+        cont = 0
+        for i in instr.id:
+            print("id:",i.id)
+            cont += 1
+            print("procesar definicion: ",i.id,instr.tipo)
+            tmp = getTemp()
+            simbolo = TS.Simbolo(i.id, instr.tipo, 0,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+            print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+            ts.agregar(simbolo)
+            print("contador temp: ",cont_v)
+            #codigo3d += tmp + "=" + "$sp" "+" + str(cont_v)+";\n"
+            cont_v += 1
+
+    print("definicion global procesada")
 
 def procesar_definicion(instr,ambito, ts) :
     global cont_v
@@ -162,6 +192,190 @@ def procesar_definicion(instr,ambito, ts) :
 
     print("definicion procesada")
     
+def procesar_asignacion_global(instr,ambito,ts):
+    print("procesar asignacion global")
+    global codigoglobal
+    val = resolver_expresion_aritmetica(instr.expNumerica, ts)
+    print("procesar asignacion :",instr.id,"=",val)
+    if isinstance(instr.expNumerica, AccesoArreglo):
+        #print("es arreglo")
+        if ts.existe(instr) :
+            print("existe solo se actualiza",ts.obtener(instr.id).tipo,"expresion es tipo:",instr.expNumerica.tipo)
+            if ts.obtener(instr.id).tipo ==  instr.expNumerica.tipo:
+                print("son int")
+                simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                ts.actualizar(simbolo)
+                codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"
+            elif ts.obtener(instr.id).tipo == instr.expNumerica.tipo:
+                print("son float")
+                simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                ts.actualizar(simbolo)
+                codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(ival) +";\n"    
+            elif ts.obtener(instr.id).tipo ==instr.expNumerica.tipo :
+                print("son char")
+                simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                ts.actualizar(simbolo)
+                codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"  
+            elif ts.obtener(instr.id).tipo == "TIPO_DATO.CARACTER" and instr.expNumerica.tipo == TS.TIPO_DATO.CADENA:
+                print("son char arreglo")
+                simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                ts.actualizar(simbolo)
+                codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"    
+            else:
+                print("no son del mismo tipo aca")
+                err = "Error de tipos \'" + str(ts.obtener(instr.id).tipo)+ "\' con \'" +str(instr.expNumerica.tipo)+"\' en la linea: "+str(instr.expNumerica.linea)
+                print(err)
+                errores.append(err)
+
+        else:
+            print("no existe la variable, no se asignara")
+            #simbolo = TS.Simbolo(instr.id,instr.expNumerica.expNumerica.tipo, val)
+            #ts.agregar(simbolo) 
+    else:
+        print("else instr",instr.id)
+        if ts.existe(instr) :
+
+            print("existe solo se actualiza asdf",ts.obtener(instr.id),"expresion es tipo:",val)
+            print(ts.obtener(instr.id).tipo)
+            print(instr.expNumerica.tipo)
+            print(instr.expNumerica)
+            if isinstance(instr.expNumerica , ExpresionBinaria):
+                print("es binaria")
+                print("tipo",instr.expNumerica.tipo)
+                if instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
+                    print("son int",instr)
+                    simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"
+                    return str(ts.obtener(instr.id).temporal)
+                elif instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
+                    print("son float")
+                    simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"    
+                    return str(ts.obtener(instr.id).temporal)
+                elif instr.expNumerica.tipo == "double":
+                    print("son double")
+                    simbolo = TS.Simbolo(instr.id, str(ts.obtener(instr.id).tipo), val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"    
+                    return str(ts.obtener(instr.id).temporal)
+                elif instr.expNumerica.tipo == "int":
+                    print("es int")
+                    simbolo = TS.Simbolo(instr.id, str(ts.obtener(instr.id).tipo), val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"    
+                    return str(ts.obtener(instr.id).temporal)                             
+                elif instr.expNumerica.tipo == TS.TIPO_DATO.CARACTER:
+                    print("son char")
+                    simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)  
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"
+                    return str(ts.obtener(instr.id).temporal)
+                elif instr.expNumerica.tipo == TS.TIPO_DATO.CADENA:
+                    print("son char arreglo")
+                    simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)         
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"
+                    return str(ts.obtener(instr.id).temporal)
+                else:
+                    print("no son del mismo tipo")
+                    err = "Error de tipos \'" + str(ts.obtener(instr.id).tipo)+ "\' con \'" +str(instr.expNumerica.tipo)+"\' en la linea: "+str(instr.expNumerica.linea)
+                    print(err)
+                    errores.append(err)
+            elif isinstance(instr.expNumerica,ExpresionEntero):#es expNumerica
+                if instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
+                    print("son int",instr)
+                    simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"
+                    return str(ts.obtener(instr.id).temporal)
+                elif instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
+                    print("son float")
+                    simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"    
+                    return str(ts.obtener(instr.id).temporal)
+                elif str(ts.obtener(instr.id).tipo) == "double":
+                    print("son double")
+                    simbolo = TS.Simbolo(instr.id, str(ts.obtener(instr.id).tipo), val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"    
+                    return str(ts.obtener(instr.id).temporal)                    
+                elif instr.expNumerica.tipo == TS.TIPO_DATO.CARACTER:
+                    print("son char")
+                    simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo,val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)  
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"
+                    return str(ts.obtener(instr.id).temporal)
+                elif instr.expNumerica.tipo == TS.TIPO_DATO.CADENA:
+                    print("son char arreglo")
+                    simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)         
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"
+                    return str(ts.obtener(instr.id).temporal)
+                else:
+                    print("no son del mismo tipo")
+                    err = "Error de tipos \'" + str(ts.obtener(instr.id).tipo)+ "\' con \'" +str(instr.expNumerica.tipo)+"\' en la linea: "+str(instr.expNumerica.linea)
+                    print(err)
+                    errores.append(err)
+            else:
+                print("no es binaria ni expentero")
+                if ts.obtener(instr.id).tipo == "int" and instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
+                    print("son int",instr)
+                    simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"
+                    return str(ts.obtener(instr.id).temporal)
+                elif ts.obtener(instr.id).tipo == "float" and  instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
+                    print("son float")
+                    simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"  
+                    return str(ts.obtener(instr.id).temporal)  
+                elif str(ts.obtener(instr.id).tipo) == "double":
+                    print("son double")
+                    simbolo = TS.Simbolo(instr.id, str(ts.obtener(instr.id).tipo), val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"    
+                    return str(ts.obtener(instr.id).temporal)                    
+                
+                elif ts.obtener(instr.id).tipo == "char" and instr.expNumerica.tipo == TS.TIPO_DATO.CARACTER:
+                    print("son char")
+                    simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)  
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"
+                    return str(ts.obtener(instr.id).temporal)
+                elif ts.obtener(instr.id).tipo == "char" and instr.expNumerica.tipo == TS.TIPO_DATO.CADENA:
+                    print("son char arreglo")
+                    simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
+                    ts.actualizar(simbolo)         
+                    #tmp = getTemp()
+                    codigoglobal += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"
+                else:
+                    print("no son del mismo tipo")
+                    err = "Error de tipos \'" + str(ts.obtener(instr.id).tipo)+ "\' con \'" +str(instr.expNumerica.tipo)+"\' en la linea: "+str(instr.expNumerica.linea)
+                    print(err)
+                    errores.append(err)    
+        else:
+            print("no existe la variable")
+            #simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val)
+            #ts.agregar(simbolo)
 
 def procesar_asignacion(instr,ts) :
     global codigo3d
@@ -180,7 +394,7 @@ def procesar_asignacion(instr,ts) :
                 print("son float")
                 simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
                 ts.actualizar(simbolo)
-                codigo3d += str(ts.obtener(instr.id).temporal)+ "=" + str(ival) +";\n"    
+                codigo3d += str(ts.obtener(instr.id).temporal)+ "=" + str(val) +";\n"    
             elif ts.obtener(instr.id).tipo ==instr.expNumerica.tipo :
                 print("son char")
                 simbolo = TS.Simbolo(instr.id, instr.expNumerica.tipo, val,ts.obtener(instr.id).direccion,ts.obtener(instr.id).ambito,ts.obtener(instr.id).rol,ts.obtener(instr.id).temporal)
@@ -357,23 +571,215 @@ def procesar_definicion_asignacion(instr,ambito,ts):
         print("entro al for",i)
         if ts.existe(i) :
             print("existe")
+            if ts.obtener(i.id).ambito == ambito:
+                print("es el mismo ambito")
+                
+                print("existe solo se actualiza",ts.obtener(i.id).tipo,"expresion es tipo:",instr.expNumerica.tipo)
+                if ts.obtener(i.id).tipo == TS.TIPO_DATO.NUMERO and instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
+                    print("son int")
+                    simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
+                    ts.actualizar(simbolo)
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                    
+                elif ts.obtener(i.id).tipo == TS.TIPO_DATO.FLOAT and instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
+                    print("son int")
+                    simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
+                    ts.actualizar(simbolo)
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                elif ts.obtener(i.id).tipo == TS.TIPO_DATO.NUMERO and instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
+                    print("son int")
+                    simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
+                    ts.actualizar(simbolo)
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                elif ts.obtener(i.id).tipo == TS.TIPO_DATO.NUMERO and str(instr.expNumerica) == "scanf":
+                    print("es scanf")
+
+                elif ts.obtener(i.id).tipo == TS.TIPO_DATO.FLOAT and instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
+                    print("son float")
+                    simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
+                    ts.actualizar(simbolo)
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"    
+                
+                elif ts.obtener(i.id).tipo == "double" and instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
+                    print("son double")
+                    simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
+                    ts.actualizar(simbolo)
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"    
+                
+                elif ts.obtener(i.id).tipo == "double" and instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
+                    print("son double")
+                    simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
+                    ts.actualizar(simbolo)
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"    
+                
+                elif ts.obtener(i.id).tipo == TS.TIPO_DATO.CARACTER and instr.expNumerica.tipo == TS.TIPO_DATO.CARACTER:
+                    print("son char")
+                    simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
+                    ts.actualizar(simbolo) 
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"   
+                elif ts.obtener(i.id).tipo == TS.TIPO_DATO.CARACTER and instr.expNumerica.tipo == TS.TIPO_DATO.CADENA:
+                    print("son char")
+                    simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
+                    ts.actualizar(simbolo) 
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"   
+                else:
+                    print("no son del mismo tipo")
+                    err = "Error de tipos \'" + str(ts.obtener(i.id).tipo)+ "\' con \'" +str(instr.expNumerica.tipo)+"\' en la linea: "+str(instr.expNumerica.linea)
+                    print(err)
+                    errores.append(err)
+            else:
+                print("ambito diferente")
+                print("no existe se guarda en ts",i.id, "tipo :",instr.tipo,"tipo dato: ",instr.expNumerica.tipo)
+                if  instr.tipo == "int" and instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
+                    print("es int")
+                    tmp = getTemp()
+                    simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.NUMERO, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                    print("id:",simbolo.id,"tipo:",simbolo.tipo,"valor:",val,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                    ts.agregar(simbolo)
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                elif instr.tipo == "float" and instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
+                    print("es float")
+                    tmp = getTemp()
+                    simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.FLOAT, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                    print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                    ts.agregar(simbolo)
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                
+                elif instr.tipo == "double" and instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
+                    print("es double")
+                    tmp = getTemp()
+                    simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.FLOAT, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                    print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                    ts.agregar(simbolo)
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                
+                elif instr.tipo == "double" and instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
+                    print("es double")
+                    tmp = getTemp()
+                    simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.FLOAT, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                    print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                    ts.agregar(simbolo)
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                elif instr.tipo == "double" and instr.expNumerica.tipo == "int":
+                    print("es double")
+                    tmp = getTemp()
+                    simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.FLOAT, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                    print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                    ts.agregar(simbolo)
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                elif instr.tipo == "char" and instr.expNumerica.tipo == TS.TIPO_DATO.CARACTER:
+                    print("es char")
+                    tmp = getTemp()
+                    simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.CARACTER, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                    print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                    ts.agregar(simbolo)
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                elif instr.tipo == "char" and instr.expNumerica.tipo == TS.TIPO_DATO.CADENA:
+                    print("es char cadena")
+                    tmp = getTemp()
+                    simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.CADENA, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                    print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                    ts.agregar(simbolo) 
+                    codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n" 
+                else:
+                    print("no son del mismo tipo")
+                    err = "Error de tipos \'" + str(instr.tipo)+ "\' con \'" +str(instr.expNumerica.tipo)+"\' en la linea: "+str(instr.expNumerica.linea)
+                    print(err)
+                    errores.append(err)
+
+                
+
+        else:
+            
+            print("no existe se guarda en ts",i.id, "tipo :",instr.tipo,"tipo dato: ",instr.expNumerica.tipo)
+            if  instr.tipo == "int" and instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
+                print("es int")
+                tmp = getTemp()
+                simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.NUMERO, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                print("id:",simbolo.id,"tipo:",simbolo.tipo,"valor:",val,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                ts.agregar(simbolo)
+                codigo3d += str(tmp)+ "=" + str(val) +";\n"
+            elif instr.tipo == "float" and instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
+                print("es float")
+                tmp = getTemp()
+                simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.FLOAT, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                ts.agregar(simbolo)
+                codigo3d += str(tmp)+ "=" + str(val) +";\n"
+            
+            elif instr.tipo == "double" and instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
+                print("es double")
+                tmp = getTemp()
+                simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.FLOAT, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                ts.agregar(simbolo)
+                codigo3d += str(tmp)+ "=" + str(val) +";\n"
+            
+            elif instr.tipo == "double" and instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
+                print("es double")
+                tmp = getTemp()
+                simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.FLOAT, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                ts.agregar(simbolo)
+                codigo3d +=str(tmp)+ "=" + str(val) +";\n"
+            elif instr.tipo == "double" and instr.expNumerica.tipo == "int":
+                print("es double")
+                tmp = getTemp()
+                simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.FLOAT, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                ts.agregar(simbolo)
+                codigo3d += str(tmp)+ "=" + str(val) +";\n"
+            elif instr.tipo == "char" and instr.expNumerica.tipo == TS.TIPO_DATO.CARACTER:
+                print("es char")
+                tmp = getTemp()
+                simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.CARACTER, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                ts.agregar(simbolo)
+                codigo3d += str(tmp)+ "=" + str(val) +";\n"
+            elif instr.tipo == "char" and instr.expNumerica.tipo == TS.TIPO_DATO.CADENA:
+                print("es char cadena")
+                tmp = getTemp()
+                simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.CADENA, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
+                print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
+                ts.agregar(simbolo) 
+                codigo3d += str(tmp)+ "=" + str(val) +";\n" 
+            else:
+                print("no son del mismo tipo")
+                err = "Error de tipos \'" + str(instr.tipo)+ "\' con \'" +str(instr.expNumerica.tipo)+"\' en la linea: "+str(instr.expNumerica.linea)
+                print(err)
+                errores.append(err)
+
+
+
+    
+        cont_v += 1
+def procesar_definicion_asignacion_global(instr,ambito,ts):
+    global cont_v, codigoglobal
+    print(instr)
+    print("tipo:",instr.tipo,"id:",instr.id,"expnumerica:",instr.expNumerica)
+    val = resolver_expresion_aritmetica(instr.expNumerica, ts)
+    print("procesar definicion asignacion :",instr.id,"=",val)
+    for i in instr.id:
+        print("entro al for",i)
+        if ts.existe(i) :
+            print("existe")
             print("existe solo se actualiza",ts.obtener(i.id).tipo,"expresion es tipo:",instr.expNumerica.tipo)
             if ts.obtener(i.id).tipo == TS.TIPO_DATO.NUMERO and instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
                 print("son int")
                 simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
                 ts.actualizar(simbolo)
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                codigoglobal += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
                 
             elif ts.obtener(i.id).tipo == TS.TIPO_DATO.FLOAT and instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
                 print("son int")
                 simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
                 ts.actualizar(simbolo)
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                codigoglobal += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
             elif ts.obtener(i.id).tipo == TS.TIPO_DATO.NUMERO and instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
                 print("son int")
                 simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
                 ts.actualizar(simbolo)
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                codigoglobal += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
             elif ts.obtener(i.id).tipo == TS.TIPO_DATO.NUMERO and str(instr.expNumerica) == "scanf":
                 print("es scanf")
 
@@ -381,30 +787,30 @@ def procesar_definicion_asignacion(instr,ambito,ts):
                 print("son float")
                 simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
                 ts.actualizar(simbolo)
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"    
+                codigoglobal += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"    
             
             elif ts.obtener(i.id).tipo == "double" and instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
                 print("son double")
                 simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
                 ts.actualizar(simbolo)
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"    
+                codicodigoglobalgo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"    
             
             elif ts.obtener(i.id).tipo == "double" and instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
                 print("son double")
                 simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
                 ts.actualizar(simbolo)
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"    
+                codigoglobal += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"    
             
             elif ts.obtener(i.id).tipo == TS.TIPO_DATO.CARACTER and instr.expNumerica.tipo == TS.TIPO_DATO.CARACTER:
                 print("son char")
                 simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
                 ts.actualizar(simbolo) 
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"   
+                codigoglobal += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"   
             elif ts.obtener(i.id).tipo == TS.TIPO_DATO.CARACTER and instr.expNumerica.tipo == TS.TIPO_DATO.CADENA:
                 print("son char")
                 simbolo = TS.Simbolo(i.id, instr.expNumerica.tipo, val,ts.obtener(i.id).direccion,ts.obtener(i.id).ambito,ts.obtener(i.id).rol,ts.obtener(i.id).temporal)
                 ts.actualizar(simbolo) 
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"   
+                codigoglobal += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"   
             else:
                 print("no son del mismo tipo")
                 err = "Error de tipos \'" + str(ts.obtener(i.id).tipo)+ "\' con \'" +str(instr.expNumerica.tipo)+"\' en la linea: "+str(instr.expNumerica.linea)
@@ -420,14 +826,14 @@ def procesar_definicion_asignacion(instr,ambito,ts):
                 simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.NUMERO, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
                 print("id:",simbolo.id,"tipo:",simbolo.tipo,"valor:",val,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
                 ts.agregar(simbolo)
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                codigoglobal += str(tmp)+ "=" + str(val) +";\n"
             elif instr.tipo == "float" and instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
                 print("es float")
                 tmp = getTemp()
                 simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.FLOAT, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
                 print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
                 ts.agregar(simbolo)
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                codigoglobal += str(tmp)+ "=" + str(val) +";\n"
             
             elif instr.tipo == "double" and instr.expNumerica.tipo == TS.TIPO_DATO.FLOAT:
                 print("es double")
@@ -435,7 +841,7 @@ def procesar_definicion_asignacion(instr,ambito,ts):
                 simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.FLOAT, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
                 print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
                 ts.agregar(simbolo)
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                codigoglobal += str(tmp)+ "=" + str(val) +";\n"
             
             elif instr.tipo == "double" and instr.expNumerica.tipo == TS.TIPO_DATO.NUMERO:
                 print("es double")
@@ -443,28 +849,22 @@ def procesar_definicion_asignacion(instr,ambito,ts):
                 simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.FLOAT, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
                 print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
                 ts.agregar(simbolo)
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
-            elif instr.tipo == "double" and instr.expNumerica.tipo == "int":
-                print("es double")
-                tmp = getTemp()
-                simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.FLOAT, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
-                print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
-                ts.agregar(simbolo)
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                codigoglobal += str(tmp)+ "=" + str(val) +";\n"
+            
             elif instr.tipo == "char" and instr.expNumerica.tipo == TS.TIPO_DATO.CARACTER:
                 print("es char")
                 tmp = getTemp()
                 simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.CARACTER, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
                 print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
                 ts.agregar(simbolo)
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n"
+                codigoglobal += str(tmp)+ "=" + str(val) +";\n"
             elif instr.tipo == "char" and instr.expNumerica.tipo == TS.TIPO_DATO.CADENA:
                 print("es char cadena")
                 tmp = getTemp()
                 simbolo = TS.Simbolo(i.id, TS.TIPO_DATO.CADENA, val,cont_v,ambito,TS.TIPO_DATO.VARIABLE,tmp)
                 print("id:",simbolo.id,"tipo:",simbolo.tipo,"direccion:",cont_v,"ambito: ",simbolo.ambito,"rol: ",simbolo.rol,"temp: ",tmp)      # inicializamos con 0 como valor por defecto
                 ts.agregar(simbolo) 
-                codigo3d += str(ts.obtener(i.id).temporal)+ "=" + str(val) +";\n" 
+                codigoglobal += str(tmp)+ "=" + str(val) +";\n" 
             else:
                 print("no son del mismo tipo")
                 err = "Error de tipos \'" + str(instr.tipo)+ "\' con \'" +str(instr.expNumerica.tipo)+"\' en la linea: "+str(instr.expNumerica.linea)
@@ -613,7 +1013,7 @@ def procesar_asignacion_arreglo_mul(instr,ambito, ts):
         ts.agregar(simbolo)
         #print("simbolo",simbolo)
 
-def procesar_llamada_funcion(instr,ambito,ts):
+def procesar_llamada_funcion(instr,ts):
     global codigo3d
     print("procesando llamada", instr.id," parametros:",instr.ids)
     print(len(instr.ids))
@@ -623,16 +1023,17 @@ def procesar_llamada_funcion(instr,ambito,ts):
     
     print(param)
     cont=0
-    if len(param) == len(instr.ids):
+    if param == 0:
+        print("no tiene parametros")
+    elif len(param) == len(instr.ids):
         for p in param:
             val = resolver_expresion_aritmetica(instr.ids[cont],ts)
             codigo3d += str(p)+"="+str(val)+";\n"
             cont += 1
 
-    lbls = getSalida()
     codigo3d += "goto " + str(instr.id) + ";\n"
     
-    return lbls
+    return ts.obtener(instr.id).direccion
 
 def procesar_if(instr, ts) :
     global codigo3d
@@ -677,7 +1078,7 @@ def procesar_if_else(instr,ts):
 
 def procesar_if_else_if(instr,ts):
     global codigo3d
-    print("procesando if else exp1:",instr.expNumerica," lista verdera:", instr.instrIfVerdadero,"else if: ",instr.expNumerica2)
+    print("procesando if else if exp1:",instr.expNumerica," lista verdera:", instr.instrIfVerdadero,"else if: ",instr.expNumerica2)
     val = resolver_expresion_aritmetica(instr.expNumerica,ts)
     tmp = getTemp()
     lbl = getEtiquetaVerdadera()
@@ -845,30 +1246,43 @@ def procesar_for(instr,ts):
     procesar_instrucciones_metodo(instr.instrucciones,f,ts)
     codigo3d += "goto "+str(f)+";\n"
     return lbls
-def procesar_metodo(instr, ts):
+def procesar_metodo(instr,salida, ts):
     global codigo3d
     print("procesando metodo adfasdfasd",instr.id)
-    simbolo = TS.Simbolo(instr.id, TS.TIPO_DATO.CADENA, 0,0,instr.id,TS.TIPO_DATO.METODO,0)      # inicializamos con 0 como valor por defecto
+    
+    simbolo = TS.Simbolo(instr.id, TS.TIPO_DATO.CADENA, 0,salida,instr.id,TS.TIPO_DATO.METODO,0)      # inicializamos con 0 como valor por defecto
     ts.agregar(simbolo)
     codigo3d +=str(instr.id) +":\n"
     procesar_instrucciones_metodo(instr.instrucciones,instr.id,ts)
+    codigo3d += "goto "+str(salida)+";\n"
 
-def procesar_metodo_parametro(instr, ts):
+def procesar_metodo_debug(instr,salida, ts):
+    global codigo3d
+    print("procesando metodo adfasdfasd",instr.id)
+    
+    simbolo = TS.Simbolo(instr.id, TS.TIPO_DATO.CADENA, 0,salida,instr.id,TS.TIPO_DATO.METODO,0)      # inicializamos con 0 como valor por defecto
+    ts.agregar(simbolo)
+    codigo3d +=str(instr.id) +":\n"
+    #procesar_instrucciones_metodo(instr.instrucciones,instr.id,ts)
+    #codigo3d += "goto "+str(salida)+";\n"
+
+def procesar_metodo_parametro(instr,salida, ts):
     global codigo3d
     arreglo=[]
     print("procesando metodo parametro",instr.id)
     for p in instr.parametros:
         print(p)
         param = getParam()
-        simbolo = TS.Simbolo(p.id, p.tipo, 0,0,instr.id,TS.TIPO_DATO.METODO,param)      # inicializamos con 0 como valor por defecto
+        simbolo = TS.Simbolo(p.id, p.tipo, 0,salida,instr.id,TS.TIPO_DATO.METODO,param)      # inicializamos con 0 como valor por defecto
         ts.agregar(simbolo)    
         arreglo.append(param)
 
-    simbolo = TS.Simbolo(instr.id, TS.TIPO_DATO.CADENA, arreglo,0,instr.id,TS.TIPO_DATO.METODO,0)      # inicializamos con 0 como valor por defecto
+    simbolo = TS.Simbolo(instr.id, TS.TIPO_DATO.CADENA, arreglo,salida,instr.id,TS.TIPO_DATO.METODO,0)      # inicializamos con 0 como valor por defecto
     ts.agregar(simbolo)
     print(len(instr.parametros))
     codigo3d +=str(instr.id) +":\n"
     procesar_instrucciones_metodo(instr.instrucciones,instr.id,ts)
+    codigo3d +="goto "+str(salida)+";\n"
     
     
     
@@ -1199,6 +1613,9 @@ def resolver_expresion_aritmetica(expNum, ts) :
         return expNum.val
     elif isinstance(expNum, ExpresionIdentificador) :
         #print("resolver expresion temporal: ",ts.obtener(expNum.id).valor)
+        for simbolo in ts.simbolos:
+            print(simbolo)
+
         expNum.val = ts.obtener(expNum.id).temporal
         expNum.tipo = ts.obtener(expNum.id).tipo
         return expNum.val
@@ -1285,51 +1702,275 @@ def resolver_expresion_aritmetica(expNum, ts) :
 
 def procesar_instrucciones_main_debug(instrucciones,contador,ts):
     #print("entro al debug en pos",contador)
-    if instrucciones[0].id == "main":
-        
-        
-        print("instruccion:", instrucciones[contador])            
-        if isinstance(instrucciones[contador+1], Imprimir) : 
-            
-            procesar_imprimir(instrucciones[contador+1],ts)
-            
+    
+    global codigo3d,etiquetas,cont_global,codigoglobal,codigosalida
+    codigo3d = ''
+    codigoglobal = ''
+    codigosalida =''
+    bandera = False
+    param=[]
+    print(len(instrucciones))
+    i = instrucciones[contador]
+    salida = getSalida()
+    print("buscamos el main",i.id)
+    if i.id == "main":
+        bandera = True
+        instrucciones = i.instrucciones 
+        print(instrucciones)   
+        codigo3d +="main:\n"
+        #print("instruccion:", instr)            
+        if isinstance(instrucciones, Imprimir) : 
+            #print("imprimir")
+            procesar_imprimir(instr,ts)
+        elif isinstance(instr, ImprimirCompuesto):
+            print("imprimir compuesto")
+            procesar_imprimir_compuesto(instr,ts)
             #hijo = graficar_imprimir(instr,n_print,ts)
-        elif isinstance(instrucciones[contador+1], Definicion_Asignacion) : 
+        elif isinstance(instr, Definicion) : 
+            print("definicion",instr.tipo, " ",instr.id[0].id)
+            procesar_definicion(instr,"main",ts)
             
-            procesar_asignacion(instrucciones[contador+1], ts)
+        elif isinstance(instr, Asignacion):
+            #print("asignacion",instr.id, instr.expNumerica.val)
+            procesar_asignacion(instr,ts)
+            
+        elif isinstance(instr, Definicion_Asignacion) : 
+            print("definicion asignacion")
+            procesar_definicion_asignacion(instr,"main", ts)
             
             #graficar_asignacion(instr,n_asing,ts)    
-        elif isinstance(instrucciones[contador+1], Definicion_Asignacion_Arreglo) : 
+        elif isinstance(instr, Definicion_Asignacion_Arreglo) : 
+            print("imprimir")
+            #procesar_asignacion_arreglo(instr, ts) 
             
-            procesar_asignacion_arreglo(instrucciones[contador+1], ts)    
-        elif isinstance(instrucciones[contador+1], Definicion_Asignacion_Arreglo_Multiple) : 
-            
-            procesar_asignacion_arreglo_mul(instrucciones[contador+1],"main", ts)    
-        elif isinstance(instrucciones[contador+1], If) :
-            
-            
-            if procesar_if(instrucciones[contador+1], ts) == 1:
-                
-                return
+        elif isinstance(instr, Definicion_Asignacion_Arreglo_Multiple) : 
+            print("definicion asignacion arreglo mul")
+            procesar_asignacion_arreglo_mul(instr,"main", ts) 
         
+        elif isinstance(instr, Etiqueta):
+            print("etiqueta",instr.id)
+            codigo3d += str(instr.id)+":\n"
+        elif isinstance(instr, Goto):
+            print("goto",instr.metodo)
+            codigo3d +="goto "+str(instr.metodo)+";\n"
+        elif isinstance(instr, Llamada_Funcion):
+            print("llamada funcion",instr.id)                    
+            l = procesar_llamada_funcion(instr,ts)
+            if l != None:
+                print("no es none llamada")
+                codigo3d += str(l)   +":\n"
+        elif isinstance(instr, If) :
+            print("if")
+            
+            s = procesar_if(instr, ts)
+            print("regreso del if",s)
+            if s != None:
+                print("no es none")
+                codigo3d += str(s)+":\n"
+                #return
+        elif isinstance(instr, IfElse) :
+            print("ifelse")
+            
+            s = procesar_if_else(instr, ts)
+            print("regreso del if else",s)
+            if s != None:
+                print("no es none el else")
+                codigo3d += str(s)+":\n"
+                #return
+        elif isinstance(instr, IfElseIf) :
+            print("es if else if")
+            s = procesar_if_else_if(instr, ts)
+            print("regreso del if else if",s)
+            if s != None:
+                print("no es none el else")
+                codigo3d += str(s)+":\n"
+                #return
+        elif isinstance(instr, Switch) :
+            print("switch")
+            
+            sw = procesar_switch(instr, ts)
+            if sw != None:
+                print("no es none switch")
+                codigo3d += str(sw)   +":\n"
+            
+        elif isinstance(instr, Definicion_Metodo) : 
+            print("metodo")
+            
+            procesar_metodo(instr,salida,ts)
+            
+        elif isinstance(instr, Definicion_Metodo_Parametro) : 
+            print("metodo parametro")
+            
+            procesar_metodo_parametro(instr,salida,ts)
+        elif isinstance(instr,Definicion_Struct):
+            print("struct")
+            procesar_struct(instr,ts)
+        elif isinstance(instr, Return):
+            print("return")
+        
+        elif isinstance(instr,Aumento):
+            print("aumento")    
+            procesar_aumento(instr,ts)
+        elif isinstance(instr,Decremento):
+            print("decremento")    
+            procesar_decremento(instr,ts)
+        elif isinstance(instr, While):
+            print("while")
+            w = procesar_while(instr,ts)
+            if w != None:
+                print("no es none while")
+                codigo3d += str(w)   +":\n"
+        elif isinstance(instr, DoWhile):
+            print("do while")
+            d = procesar_dowhile(instr,ts)        
+            if d != None:
+                print("no es none while")
+                codigo3d += str(d)   +":\n"
+        elif isinstance(instr, For)       :
+            print("for")
+            f = procesar_for(instr,ts)
+            if f != None:
+                print("no es none for")
+                codigo3d += str(f)+":\n"
         else : print('Error: instruccion no valida en main')
-    
+        #codigo3d +="exit;\n"
     else:
-        print("metodo principal no esta al inicio o no existe")
+        
+        print("instruccion:", i)            
+        if isinstance(i, Imprimir) : 
+            #print("imprimir")
+            procesar_imprimir(i,ts)
+        
+            #hijo = graficar_imprimir(instr,n_print,ts)
+        elif isinstance(i, ImprimirCompuesto):
+            print("imprimir compuesto")
+            procesar_imprimir_compuesto(i,ts)    
+        elif isinstance(i, Definicion) : 
+            print("definicion",i.tipo, " ",i.id)
+            procesar_definicion_global(i,i.id,ts)
+            
+        elif isinstance(i, Asignacion):
+            #print("asignacion",instr.id, instr.expNumerica.val)
+            procesar_asignacion_global(i,"global",ts)
+            
+        elif isinstance(i, Definicion_Asignacion) : 
+            print("definicion asignacion")
+            procesar_definicion_asignacion_global(i,"global", ts)
+            
+            #graficar_asignacion(instr,n_asing,ts)    
+        elif isinstance(i, Definicion_Asignacion_Arreglo) : 
+            print("definicion asignacion arre")
+            #procesar_asignacion_arreglo(instr, ts) 
+            
+        elif isinstance(i, Definicion_Asignacion_Arreglo_Multiple) : 
+            print("definicion asigna arreglo multiple")
+            procesar_asignacion_arreglo_mul(i,i.id, ts) 
+            
+        elif isinstance(i, If) :
+            print("if")
+            
+            s = procesar_if(i, ts)
+            print("regreso del if",s)
+            if s != None:
+                print("no es none")
+                codigo3d += str(s)+":\n"
+                #return
+        elif isinstance(i, IfElse) :
+            print("ifelse")
+            
+            s = procesar_if_else(i, ts)
+            print("regreso del if else",s)
+            if s != None:
+                print("no es none el else")
+                codigo3d += str(s)+":\n"
+                #return    
+        elif isinstance(i, IfElseIf) :
+            print("es if else if")
+            s = procesar_if_else_if(i, ts)
+            print("regreso del if else if",s)
+            if s != None:
+                print("no es none el else")
+                codigo3d += str(s)+":\n"
+        elif isinstance(i, Switch) :
+            print("switch")
+            
+            sw = procesar_switch(i, ts)
+            if sw != None:
+                print("no es none switch")
+                codigo3d += str(sw)   +":\n"
+        elif isinstance(i, Llamada_Funcion):
+            print("llamada funcion",i.id)                    
+            l = procesar_llamada_funcion(i,ts)
+            if l != None:
+                print("no es none llamada")
+                codigo3d += str(l)   +":\n"    
+        elif isinstance(i, Definicion_Metodo) : 
+            print("metodo")
+            
+            procesar_metodo_debug(i,salida,ts)
+            restantes = i.instrucciones[1:]
+            print(restantes)
+
+        elif isinstance(i, Definicion_Metodo_Parametro) : 
+            print("metodo parametro")
+            
+            procesar_metodo_parametro(i,salida,ts)
+        elif isinstance(i,Definicion_Struct):
+            print("struct")
+            procesar_struct(i,ts)
+        elif isinstance(i, Return):
+            print("return")
+        
+        elif isinstance(i,Aumento):
+            print("aumento")    
+            procesar_aumento(i,ts)
+        elif isinstance(i,Decremento):
+            print("decremento")    
+            procesar_decremento(i,ts)
+        elif isinstance(i, While):
+            print("while")
+            w = procesar_while(i,ts)
+            if w != None:
+                print("no es none while")
+                codigo3d += str(w)   +":\n"
+        elif isinstance(i, DoWhile):
+            print("do while")
+            d = procesar_dowhile(i,ts)        
+            if d != None:
+                print("no es none while")
+                codigo3d += str(d)   +":\n"
+        elif isinstance(i, For)       :
+            print("for")
+            f = procesar_for(i,ts)
+            if f != None:
+                print("no es none for")
+                codigo3d += str(f)+":\n"
+        else : print('Error: instruccion no valida en main')
+    #aux = codigo3d.split("main:",1)
+    #codigosalida = "main:\n"
+    if codigoglobal != '':
+        codigosalida = codigoglobal
+    elif codigo3d != '':
+        codigosalida = codigo3d
+    #codigosalida += aux[1:][0]
+    #codigosalida += aux[:-1][0]
+    print(codigosalida)
 
 def procesar_instrucciones_main( instrucciones, ts):
     #print("procesar main")    
-    global codigo3d,etiquetas,cont_global
+    global codigo3d,etiquetas,cont_global,codigoglobal,codigosalida
     bandera = False
     param=[]
     print(len(instrucciones))
     for i in instrucciones:
+        salida = getSalida()
         print("buscamos el main",i.id)
         if i.id == "main":
             bandera = True
             instrucciones = i.instrucciones 
             print(instrucciones)   
             codigo3d +="main:\n"
+            
             for instr in instrucciones :
                 
                 #print("instruccion:", instr)            
@@ -1368,8 +2009,8 @@ def procesar_instrucciones_main( instrucciones, ts):
                     print("goto",instr.metodo)
                     codigo3d +="goto "+str(instr.metodo)+";\n"
                 elif isinstance(instr, Llamada_Funcion):
-                    print("llamada funcion",instr.id)
-                    l = procesar_llamada_funcion(instr,"main",ts)
+                    print("llamada funcion",instr.id)                    
+                    l = procesar_llamada_funcion(instr,ts)
                     if l != None:
                         print("no es none llamada")
                         codigo3d += str(l)   +":\n"
@@ -1410,12 +2051,12 @@ def procesar_instrucciones_main( instrucciones, ts):
                 elif isinstance(instr, Definicion_Metodo) : 
                     print("metodo")
                     
-                    procesar_metodo(instr,ts)
+                    procesar_metodo(instr,salida,ts)
                     
                 elif isinstance(instr, Definicion_Metodo_Parametro) : 
                     print("metodo parametro")
                     
-                    procesar_metodo_parametro(instr,ts)
+                    procesar_metodo_parametro(instr,salida,ts)
                 elif isinstance(instr,Definicion_Struct):
                     print("struct")
                     procesar_struct(instr,ts)
@@ -1447,116 +2088,123 @@ def procesar_instrucciones_main( instrucciones, ts):
                         print("no es none for")
                         codigo3d += str(f)+":\n"
                 else : print('Error: instruccion no valida en main')
+            codigo3d +="exit;\n"
         else:
             
-           
+            print("instruccion:", i)            
+            if isinstance(i, Imprimir) : 
+                #print("imprimir")
+                procesar_imprimir(i,ts)
             
+                #hijo = graficar_imprimir(instr,n_print,ts)
+            elif isinstance(i, ImprimirCompuesto):
+                print("imprimir compuesto")
+                procesar_imprimir_compuesto(i,ts)    
+            elif isinstance(i, Definicion) : 
+                print("definicion",i.tipo, " ",i.id)
+                procesar_definicion_global(i,i.id,ts)
+                
+            elif isinstance(i, Asignacion):
+                #print("asignacion",instr.id, instr.expNumerica.val)
+                procesar_asignacion_global(i,"global",ts)
+                
+            elif isinstance(i, Definicion_Asignacion) : 
+                print("definicion asignacion")
+                procesar_definicion_asignacion_global(i,"global", ts)
+                
+                #graficar_asignacion(instr,n_asing,ts)    
+            elif isinstance(i, Definicion_Asignacion_Arreglo) : 
+                print("definicion asignacion arre")
+                #procesar_asignacion_arreglo(instr, ts) 
+                
+            elif isinstance(i, Definicion_Asignacion_Arreglo_Multiple) : 
+                print("definicion asigna arreglo multiple")
+                procesar_asignacion_arreglo_mul(i,i.id, ts) 
+                
+            elif isinstance(i, If) :
+                print("if")
+                
+                s = procesar_if(i, ts)
+                print("regreso del if",s)
+                if s != None:
+                    print("no es none")
+                    codigo3d += str(s)+":\n"
+                    #return
+            elif isinstance(i, IfElse) :
+                print("ifelse")
+                
+                s = procesar_if_else(i, ts)
+                print("regreso del if else",s)
+                if s != None:
+                    print("no es none el else")
+                    codigo3d += str(s)+":\n"
+                    #return    
+            elif isinstance(i, IfElseIf) :
+                print("es if else if")
+                s = procesar_if_else_if(i, ts)
+                print("regreso del if else if",s)
+                if s != None:
+                    print("no es none el else")
+                    codigo3d += str(s)+":\n"
+            elif isinstance(i, Switch) :
+                print("switch")
+                
+                sw = procesar_switch(i, ts)
+                if sw != None:
+                    print("no es none switch")
+                    codigo3d += str(sw)   +":\n"
+            elif isinstance(i, Llamada_Funcion):
+                print("llamada funcion",i.id)                    
+                l = procesar_llamada_funcion(i,ts)
+                if l != None:
+                    print("no es none llamada")
+                    codigo3d += str(l)   +":\n"    
+            elif isinstance(i, Definicion_Metodo) : 
+                print("metodo")
+                
+                procesar_metodo(i,salida,ts)
+            elif isinstance(i, Definicion_Metodo_Parametro) : 
+                print("metodo parametro")
+                
+                procesar_metodo_parametro(i,salida,ts)
+            elif isinstance(i,Definicion_Struct):
+                print("struct")
+                procesar_struct(i,ts)
+            elif isinstance(i, Return):
+                print("return")
             
-                print("instruccion:", i)            
-                if isinstance(i, Imprimir) : 
-                    #print("imprimir")
-                    procesar_imprimir(i,ts)
-                
-                    #hijo = graficar_imprimir(instr,n_print,ts)
-                elif isinstance(i, ImprimirCompuesto):
-                    print("imprimir compuesto")
-                    procesar_imprimir_compuesto(i,ts)    
-                elif isinstance(i, Definicion) : 
-                    print("definicion",i.tipo, " ",i.id)
-                    procesar_definicion(i,i.id,ts)
-                    
-                elif isinstance(i, Asignacion):
-                    #print("asignacion",instr.id, instr.expNumerica.val)
-                    procesar_asignacion(i,ts)
-                    
-                elif isinstance(i, Definicion_Asignacion) : 
-                    print("definicion asignacion")
-                    procesar_definicion_asignacion(i,i.id, ts)
-                    
-                    #graficar_asignacion(instr,n_asing,ts)    
-                elif isinstance(i, Definicion_Asignacion_Arreglo) : 
-                    print("definicion asignacion arre")
-                    #procesar_asignacion_arreglo(instr, ts) 
-                    
-                elif isinstance(i, Definicion_Asignacion_Arreglo_Multiple) : 
-                    print("definicion asigna arreglo multiple")
-                    procesar_asignacion_arreglo_mul(i,i.id, ts) 
-                    
-                elif isinstance(i, If) :
-                    print("if")
-                    
-                    s = procesar_if(i, ts)
-                    print("regreso del if",s)
-                    if s != None:
-                        print("no es none")
-                        codigo3d += str(s)+":\n"
-                        #return
-                elif isinstance(i, IfElse) :
-                    print("ifelse")
-                    
-                    s = procesar_if_else(i, ts)
-                    print("regreso del if else",s)
-                    if s != None:
-                        print("no es none el else")
-                        codigo3d += str(s)+":\n"
-                        #return    
-                elif isinstance(i, Switch) :
-                    print("switch")
-                    
-                    sw = procesar_switch(i, ts)
-                    if sw != None:
-                        print("no es none switch")
-                        codigo3d += str(sw)   +":\n"
-                    
-                elif isinstance(i, Definicion_Metodo) : 
-                    print("metodo")
-                    
-                    procesar_metodo(i,ts)
-                elif isinstance(i, Definicion_Metodo_Parametro) : 
-                    print("metodo parametro")
-                    
-                    procesar_metodo_parametro(i,ts)
-                elif isinstance(i,Definicion_Struct):
-                    print("struct")
-                    procesar_struct(i,ts)
-                elif isinstance(instr, Return):
-                    print("return")
-                
-                elif isinstance(i,Aumento):
-                    print("aumento")    
-                    procesar_aumento(i,ts)
-                elif isinstance(i,Decremento):
-                    print("decremento")    
-                    procesar_decremento(i,ts)
-                elif isinstance(i, While):
-                    print("while")
-                    w = procesar_while(i,ts)
-                    if w != None:
-                        print("no es none while")
-                        codigo3d += str(w)   +":\n"
-                elif isinstance(i, DoWhile):
-                    print("do while")
-                    d = procesar_dowhile(i,ts)        
-                    if d != None:
-                        print("no es none while")
-                        codigo3d += str(d)   +":\n"
-                elif isinstance(i, For)       :
-                    print("for")
-                    f = procesar_for(i,ts)
-                    if f != None:
-                        print("no es none for")
-                        codigo3d += str(f)+":\n"
-                else : print('Error: instruccion no valida en main')
+            elif isinstance(i,Aumento):
+                print("aumento")    
+                procesar_aumento(i,ts)
+            elif isinstance(i,Decremento):
+                print("decremento")    
+                procesar_decremento(i,ts)
+            elif isinstance(i, While):
+                print("while")
+                w = procesar_while(i,ts)
+                if w != None:
+                    print("no es none while")
+                    codigo3d += str(w)   +":\n"
+            elif isinstance(i, DoWhile):
+                print("do while")
+                d = procesar_dowhile(i,ts)        
+                if d != None:
+                    print("no es none while")
+                    codigo3d += str(d)   +":\n"
+            elif isinstance(i, For)       :
+                print("for")
+                f = procesar_for(i,ts)
+                if f != None:
+                    print("no es none for")
+                    codigo3d += str(f)+":\n"
+            else : print('Error: instruccion no valida en main')
     aux = codigo3d.split("main:",1)
-    print(aux)
-    print(aux[1:][0])
-    print(aux[:-1][0])
-    salida = "main:\n"
+    codigosalida = "main:\n"
+    codigosalida += codigoglobal
+    codigosalida += aux[1:][0]
+    codigosalida += aux[:-1][0]
     
-    salida += aux[1:][0]
-    salida += aux[:-1][0]
-    codigo3d = salida
-    print(codigo3d)
+    print(codigosalida)
 
              
 def procesar_instrucciones_metodo(instrucciones,ambito, ts) :
@@ -1564,10 +2212,7 @@ def procesar_instrucciones_metodo(instrucciones,ambito, ts) :
     global codigo3d
     print("procesar metodo",instrucciones)
     
-    
-    
     #n_metodo=Node("metodo",parent=padre)
-    
     for instr in instrucciones :
         print("esto trae el metodo",instr)
             
@@ -1622,7 +2267,16 @@ def procesar_instrucciones_metodo(instrucciones,ambito, ts) :
             if s != None:
                 print("no es none el else")
                 codigo3d += str(s)+":\n"
-                #return    
+                #return
+        elif isinstance(instr, IfElseIf) :
+            print("ifelseif")
+            
+            ifs = procesar_if_else_if(instr, ts)
+            print("regreso del if else",s)
+            if ifs != None:
+                print("no es none el else")
+                codigo3d += str(ifs)+":\n"
+                #return        
         elif isinstance(instr, Switch) :
             print("switch")
             
@@ -1630,10 +2284,13 @@ def procesar_instrucciones_metodo(instrucciones,ambito, ts) :
             if sw != None:
                 print("no es none switch")
                 codigo3d += str(sw)   +":\n"
-                
-        elif isinstance(instr, Definicion_Metodo) : 
-            print("metodo")
-            procesar_metodo(instr,ts)
+            
+        elif isinstance(instr, Llamada_Funcion):
+            print("llamada funcion",instr.id)                    
+            l = procesar_llamada_funcion(instr,ts)
+            if l != None:
+                print("no es none llamada")
+                codigo3d += str(l)   +":\n"
         elif isinstance(instr, Definicion_Struct):
             print("struct")
             procesar_struct(instr,ts)
@@ -1671,6 +2328,7 @@ def procesar_instrucciones_caso(instrucciones, ts) :
     global codigo3d
     print("procesar caso")
     #n_metodo=Node("metodo",parent=padre)
+    salida = getSalida()
     for instr in instrucciones :
         print("esto trae",instr)
             
@@ -1725,7 +2383,16 @@ def procesar_instrucciones_caso(instrucciones, ts) :
             if s != None:
                 print("no es none el else")
                 codigo3d += str(s)+":\n"
-                #return    
+                #return
+        elif isinstance(instr, IfElseIf) :
+            print("ifelseif")
+            
+            s = procesar_if_else_if(instr, ts)
+            print("regreso del if else",s)
+            if s != None:
+                print("no es none el else")
+                codigo3d += str(s)+":\n"
+                #return        
         elif isinstance(instr, Switch) :
             print("switch")
             
@@ -1733,10 +2400,12 @@ def procesar_instrucciones_caso(instrucciones, ts) :
             if sw != None:
                 print("no es none switch")
                 codigo3d += str(sw)   +":\n"
-                
-        elif isinstance(instr, Definicion_Metodo) : 
-            print("metodo")
-            procesar_metodo(instr,ts)
+        elif isinstance(instr, Llamada_Funcion):
+            print("llamada funcion",instr.id)                    
+            l = procesar_llamada_funcion(instr,ts)
+            if l != None:
+                print("no es none llamada")
+                codigo3d += str(l)   +":\n"
         elif isinstance(instr, Definicion_Struct):
             print("struct")
             procesar_struct(instr,ts)
@@ -1907,36 +2576,45 @@ def reporte_errores(errores):
 
 def reporte_gramatica(gramatica):
     #print("reporte gramatica",gramatica)
-    
-    d = Digraph('G', filename='gramatical')
-    cont=0
-    nodo = ""
-    nueva = gramatica[::-1]
-    #rint("nueva",nueva)
-    for gram in nueva:
-        #print("esto trae:",gram)
-        nodo += '<TR><TD>'+gram+'</TD></TR>'
-        
-    #print("nodo",nodo)    
-    d.node('tab2',label='''<<TABLE>
-    '''+nodo+'''
-    </TABLE>>''')
-    d.view()
+    open('gramatical','w').close()
+    if errores == None:
+        print("no hay errores")
+        return
+    else:
+        d = Digraph('G', filename='gramatical')
+        cont=0
+        nodo = ""
+        nueva = gramatica[::-1]
+        #rint("nueva",nueva)
+        for gram in nueva:
+            #print("esto trae:",gram)
+            nodo += '<TR><TD>'+gram+'</TD></TR>'
+            
+        #print("nodo",nodo)    
+        d.node('tab2',label='''<<TABLE>
+        '''+nodo+'''
+        </TABLE>>''')
+        d.view()
 
 def reporte_tabla_simbolos(simbolos):
-    print("reporte ts")
-    d = Digraph('G', filename='simbolos')
-    cont=0
-    nodo = ""
-    for simbolo in simbolos:
-        print("esto trae:",simbolos[simbolo].id,"tipo: ",simbolos[simbolo].id,"valor ",simbolos[simbolo].valor)
-        nodo += '<TR><TD>'+simbolos[simbolo].id+'</TD><TD>'+str(simbolos[simbolo].tipo)+'</TD><TD>'+str(simbolos[simbolo].valor)+'</TD></TR>'
-        
-    #print("nodo",nodo)    
-    d.node('tab3',label='''<<TABLE>
-    '''+nodo+'''
-    </TABLE>>''')
-    d.view()
+    open('simbolos','w').close()
+    if errores == None:
+        print("no hay errores")
+        return
+    else:
+        print("reporte ts")
+        d = Digraph('G', filename='simbolos')
+        cont=0
+        nodo = ""
+        for simbolo in simbolos:
+            print("esto trae:",simbolos[simbolo].id,"tipo: ",simbolos[simbolo].id,"valor ",simbolos[simbolo].valor,"ambito ",simbolos[simbolo].ambito)
+            nodo += '<TR><TD>'+simbolos[simbolo].id+'</TD><TD>'+str(simbolos[simbolo].tipo)+'</TD><TD>'+str(simbolos[simbolo].valor)+'</TD><TD>'+str(simbolos[simbolo].ambito)+'</TD><TD>'+str(simbolos[simbolo].rol)+'</TD></TR>'
+            
+        #print("nodo",nodo)    
+        d.node('tab3',label='''<<TABLE>
+        '''+nodo+'''
+        </TABLE>>''')
+        d.view()
 
     
 #reporte_errores()   
