@@ -92,7 +92,7 @@ t_MAYQUE    = r'>'
 t_IGUALQUE  = r'=='
 t_NIGUALQUE = r'!='
 t_RESIDUO = r'%'
-import ts as TS
+import ts2 as TS
 
 def t_DECIMAL(t):
     r'\d+\.\d+'
@@ -165,7 +165,7 @@ def t_COMENTARIO_MULTILINEA(t):
 
 # Comentario simple // ...
 def t_COMENTARIO_SIMPLE(t):
-    r'//.*\n'
+    r'\#.*\n'
     t.lexer.lineno += 1
 
 # Caracteres ignorados
@@ -206,8 +206,8 @@ precedence = (
 
 # Definición de la gramática
 
-from expresiones import *
-from instrucciones import *
+from expresiones2 import *
+from instrucciones2 import *
 from anytree import Node, RenderTree
 from anytree.exporter import DotExporter
 from anytree.exporter import UniqueDotExporter
@@ -415,20 +415,20 @@ def p_expresion_binaria_bit(t):
     global gramatical 
     if t[2] == '&'  : 
         t[0] = ExpresionBinaria(t[1], t[3], OPERACION_LOGICA.ANDBIT)
-        gramatical.append( " expresion.val : expresion.val & expresion.val")
+        gramatical.append( " expresion.val : expresion.val andbit expresion.val")
     elif t[2] == '|': 
         t[0] = ExpresionBinaria(t[1], t[3], OPERACION_LOGICA.ORBIT)
-        gramatical.append( " expresion.val : expresion.val | expresion.val")
+        gramatical.append( " expresion.val : expresion.val orbit expresion.val")
     elif t[2] == '^': 
         t[0] = ExpresionBinaria(t[1], t[3], OPERACION_LOGICA.XORBIT)
-        gramatical.append( " expresion.val : expresion.val ^ expresion.val")
+        gramatical.append( " expresion.val : expresion.val xorbit expresion.val")
     elif t[2] == '<<': 
         t[0] = ExpresionBinaria(t[1], t[3], OPERACION_LOGICA.MENORBIT)
-        gramatical.append( " expresion.val : expresion.val << expresion.val")
+        gramatical.append( " expresion.val : expresion.val menormenor expresion.val")
     elif t[2] == '>>': 
         t[0] = ExpresionBinaria(t[1], t[3], OPERACION_LOGICA.MAYORBIT)   
              
-        gramatical.append( " expresion.val : expresion.val >> expresion.val")
+        gramatical.append( " expresion.val : expresion.val mayormayor expresion.val")
     
 def p_expresion_not(t):
     'expresion_numerica : NOT expresion_numerica'

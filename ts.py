@@ -10,6 +10,7 @@ from enum import Enum
 class TIPO_DATO(Enum) :
     NUMERO = 1
     FLOAT = 2
+    
     CHAR = 3
     CADENA = 4
     CARACTER = 5
@@ -21,13 +22,21 @@ class TIPO_DATO(Enum) :
     ABS = 11
     METODO =12
     ID = 13
+    PUNTEROI = 14
+    PUNTEROPOR = 15
+    PUNTEROPORPOR = 16
+    VARIABLE = 17
 class Simbolo() :
     'Esta clase representa un simbolo dentro de nuestra tabla de simbolos'
 
-    def __init__(self, id, tipo, valor) :
+    def __init__(self, id, tipo, valor,direccion,ambito,rol,temporal) :
         self.id = id
         self.tipo = tipo
         self.valor = valor
+        self.direccion = direccion
+        self.ambito = ambito
+        self.rol = rol
+        self.temporal = temporal
 
 class TablaDeSimbolos() :
     'Esta clase representa la tabla de simbolos'
@@ -54,6 +63,11 @@ class TablaDeSimbolos() :
         if not simbolo.id in self.simbolos:
             return False
         else :
+            return True
+    def existeId(self,id):
+        if not id in self.simbolos:
+            return False
+        else:
             return True
     def borrar(self, id):
         if not id in self.simbolos:

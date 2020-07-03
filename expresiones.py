@@ -129,7 +129,8 @@ class ExpresionCadena :
     '''
         Esta clase representa una Expresión de tipo cadena.
     '''
- 
+    def __init__(self, val) :
+        self.val = val
 class ExpresionCaracter(ExpresionCadena) :
     def __init__(self, val) :
         self.val = val
