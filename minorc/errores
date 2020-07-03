@@ -1,0 +1,5 @@
+digraph G {
+	tab [label=<<TABLE>
+        <TR><TD>Error sintactico en el token 'if' en la linea: 25 columna:2</TD></TR><TR><TD>Error sintactico en el token 'else' en la linea: 28 columna:3</TD></TR><TR><TD>Error sintactico en el token ';' en la linea: 29 columna:20</TD></TR>
+        </TABLE>>]
+}
